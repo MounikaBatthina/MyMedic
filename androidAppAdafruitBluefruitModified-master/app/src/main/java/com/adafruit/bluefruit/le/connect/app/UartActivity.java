@@ -43,7 +43,11 @@ import com.adafruit.bluefruit.le.connect.mqtt.MqttSettings;
 
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -657,15 +661,21 @@ public class UartActivity extends UartInterfaceActivity implements MqttManager.M
                     final boolean isRX2 = dataChunk2.getMode() == UartDataChunk.TRANSFERMODE_RX;
                     final byte[] bytes2 = dataChunk2.getData();
                     final String formattedData2 = mShowDataInHexFormat ? BleUtils.bytesToHex2(bytes2) : BleUtils.bytesToText(bytes2, true);
-                    addTextToSpanBuffer(mTextSpanBuffer, formattedData2+"\n Diff="+ (Float.parseFloat(formattedData1)-Float.parseFloat(formattedData2)) +"\n", isRX2 ? mRxColor : mTxColor);
-
-
+                    float differnceInAccelorometer = (Float.parseFloat(formattedData1)-Float.parseFloat(formattedData2));
+                    addTextToSpanBuffer(mTextSpanBuffer, formattedData2+"\n Diff="+ differnceInAccelorometer +"\n", isRX2 ? mRxColor : mTxColor);
+                    if(differnceInAccelorometer > 5){
+                        Log.d(TAG,"Here!!!");
+                        System.out.print("Here!!!!!!!!!!!!!!!!!!");
+                    downloadUrl("https://fallnotify.herokuapp.com/send?msg=hi");
+                    }
                 mDataBufferLastSize = mDataBuffer.size();
                 mBufferTextView.setText(mTextSpanBuffer);
                 mBufferTextView.setSelection(0, mTextSpanBuffer.length());        // to automatically scroll to the end
             }
         }
     }
+
+
 
     private void recreateDataView() {
 
@@ -692,6 +702,30 @@ public class UartActivity extends UartInterfaceActivity implements MqttManager.M
         }
     }
 
+    public InputStream downloadUrl(String u) {
+        InputStream myInputStream =null;
+        StringBuilder sb = new StringBuilder();
+        //adding some data to send along with the request to the server
+        sb.append("name=Anthony");
+        URL url;
+        try {
+            url = new URL(u);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            OutputStreamWriter wr = new OutputStreamWriter(conn
+                    .getOutputStream());
+            // this is were we're adding post data to the request
+            wr.write(sb.toString());
+            wr.flush();
+            myInputStream = conn.getInputStream();
+            wr.close();
+        } catch (Exception e) {
+            //handle the exception !
+            Log.d(TAG,e.getMessage());
+        }
+            return myInputStream;
+    }
 
 
     // region DataFragment
